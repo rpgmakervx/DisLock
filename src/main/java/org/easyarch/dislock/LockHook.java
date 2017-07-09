@@ -3,6 +3,7 @@ package org.easyarch.dislock;
 import org.easyarch.dislock.redis.RedisKits;
 
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by code4j on 2017-7-8.
@@ -10,7 +11,7 @@ import java.util.Set;
 public class LockHook {
 
     private static final String LOCK_KEY_NAME = "dislock-*";
-
+    ReentrantLock lock;
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override

@@ -4,10 +4,6 @@ package org.easyarch.dislock;
 import org.easyarch.dislock.redis.RedisKits;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by code4j on 2017-7-7.
@@ -35,6 +31,9 @@ public class DisLock implements Lock{
         this.departId = departId;
         this.appId = appId;
         this.timeout = timeout;
+        if (timeout < 0){
+            this.timeout = Long.MAX_VALUE;
+        }
         this.key = String.format(LOCK_KEY_NAME+"%s-%s",departId,appId);
         System.out.println("key:"+key);
     }
@@ -75,6 +74,24 @@ public class DisLock implements Lock{
         while (!aquire()){
             Thread.sleep(DEFAULT_AQUIRE_LOCK_STEP);
         }
+    }
+
+    @Override
+    public boolean tryLock() throws Exception {
+        return aquire();
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws Exception {
+        long begin = System.currentTimeMillis();
+        while (!aquire()){
+            Thread.sleep(DEFAULT_AQUIRE_LOCK_STEP);
+            long current = System.currentTimeMillis();
+            if ( unit.toMillis(time) < current - begin){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
