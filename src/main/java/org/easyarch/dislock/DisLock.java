@@ -4,6 +4,7 @@ package org.easyarch.dislock;
 import org.easyarch.dislock.redis.RedisKits;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by code4j on 2017-7-7.
@@ -12,7 +13,7 @@ public class DisLock implements Lock{
 
     private static final String LOCK_KEY_NAME = "dislock-";
 
-    private static final long DEFAULT_AQUIRE_LOCK_STEP = 10;
+    private static final long DEFAULT_AQUIRE_LOCK_STEP = 1;
 
     private String departId;
 
@@ -22,12 +23,9 @@ public class DisLock implements Lock{
 
     private long timeout;
 
+    private AtomicInteger count = new AtomicInteger(0);
+
     public DisLock(String departId,String appId,long timeout) {
-//        try {
-//            Class.forName(LockHook.class.getName());
-//        } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
-//        }
         this.departId = departId;
         this.appId = appId;
         this.timeout = timeout;
@@ -52,6 +50,8 @@ public class DisLock implements Lock{
         long lastLockTimeStamp = Long.valueOf(timeStr);
         //true则表示未超时，锁还是有效被占用的
         if (timeout > timestamp - lastLockTimeStamp){
+//            System.out.println(String
+//                    .format("%s > %s - %s = %s",timeout,timestamp,lastLockTimeStamp,timestamp - lastLockTimeStamp));
             return false;
         }
         timestamp = System.currentTimeMillis();
@@ -87,17 +87,20 @@ public class DisLock implements Lock{
         while (!aquire()){
             Thread.sleep(DEFAULT_AQUIRE_LOCK_STEP);
             long current = System.currentTimeMillis();
+//            System.out.println(String
+//                    .format("%s < %s - %s = %s",unit.toMillis(time),current,begin,current - begin));
             if ( unit.toMillis(time) < current - begin){
                 return false;
             }
         }
+        System.out.println("tryLock 获取成功");
         return true;
     }
 
     @Override
     public void unlock() {
         RedisKits.keys().del(key);
-        System.err.println(Thread.currentThread().getName()+" 释放锁");
+//        System.err.println(Thread.currentThread().getName()+" 释放锁");
     }
 
 }
