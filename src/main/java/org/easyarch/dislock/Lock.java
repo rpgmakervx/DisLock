@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Lock {
 
+    public static final String LOCK_KEY_NAME = "dislock-";
+
     public void lock() throws Exception;
 
     public boolean tryLock() throws Exception;

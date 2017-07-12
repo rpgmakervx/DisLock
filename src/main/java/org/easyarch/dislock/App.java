@@ -1,7 +1,5 @@
 package org.easyarch.dislock;
 
-import org.easyarch.dislock.redis.RedisKits;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,7 +31,7 @@ public class App {
         owner.compareAndSet(current, null);
     }
 
-    public static void print(DisLock lock,String id){
+    public static void print(RLock lock, String id){
         try {
             lock.lock();
 //            System.out.println(String.format("%s is locking",id));
@@ -46,7 +44,7 @@ public class App {
         System.out.println(Thread.currentThread().getName()+" finished");
     }
 
-    public static void doSth(DisLock lock,String id){
+    public static void doSth(RLock lock, String id){
         try {
             if (lock.tryLock(2, TimeUnit.SECONDS)){
                 System.out.println("获取到");
@@ -63,7 +61,7 @@ public class App {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        DisLock lock = new DisLock("suyun","app1",10000);
+        RLock lock = new RLock("suyun","app1",10000);
 //        for (int i = 0; i<1;i++){
 //            int finalI = i;
 //            new Thread(() -> {

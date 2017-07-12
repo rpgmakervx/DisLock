@@ -9,9 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by code4j on 2017-7-7.
  */
-public class DisLock implements Lock{
-
-    private static final String LOCK_KEY_NAME = "dislock-";
+public class RLock implements Lock{
 
     private static final long DEFAULT_AQUIRE_LOCK_STEP = 1;
 
@@ -23,9 +21,7 @@ public class DisLock implements Lock{
 
     private long timeout;
 
-    private AtomicInteger count = new AtomicInteger(0);
-
-    public DisLock(String departId,String appId,long timeout) {
+    public RLock(String departId, String appId, long timeout) {
         this.departId = departId;
         this.appId = appId;
         this.timeout = timeout;
