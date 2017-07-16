@@ -6,7 +6,6 @@ import org.easyarch.dislock.lock.entity.LockEntity;
 import org.easyarch.dislock.redis.RedisKits;
 import org.easyarch.dislock.sys.SysProperties;
 
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,6 +30,10 @@ public class RLock extends AbstractLock {
 
     @Override
     public boolean tryLock() {
+        try {
+            return acquire(0,0,null,false);
+        } catch (InterruptedException e) {
+        }
         return false;
     }
 
@@ -42,10 +45,27 @@ public class RLock extends AbstractLock {
 
     /**
      * 整个过程存在于一个loop中，
-     *
+     * 本方法作为loop，逻辑执行见acquire
      * loop除了执行取锁，释放锁等业务，
      * 还要检查方法是否出现调用超时（设置超时的情况），检查是否调用了中断操作
      *
+     * @param isTimeOut
+     * @param timeout
+     * @param unit
+     * @param interruptable
+     * @return
+     * @throws InterruptedException
+     */
+    @Override
+    protected boolean lock0(boolean isTimeOut, long timeout, TimeUnit unit, boolean interruptable) throws InterruptedException {
+        long callTime = SysProperties.sysMillisTime();
+        while (!acquire(callTime,timeout,unit,interruptable)){
+        }
+        this.locked = true;
+        return true;
+    }
+
+    /**
      * 具体步骤：
      * 进入循环前，记录调用时间
      * 1 如果方法有调用超时设置，先检查方法调用是否超时。
@@ -69,63 +89,59 @@ public class RLock extends AbstractLock {
      *          若此过程期间有其他实例获取锁，则获取锁失败，回到（1）尝试重新获取锁，否则获取锁成功
      *          5.2.2 实例不是自己，则回到（1）尝试重新获取锁
      *
-     * @param isTimeOut
+     *  redis写入耗时500ms,获取100ms
+     * @param begin
      * @param timeout
      * @param unit
      * @param interruptable
      * @return
      * @throws InterruptedException
      */
-    @Override
-    protected boolean lock0(boolean isTimeOut, long timeout, TimeUnit unit, boolean interruptable) throws InterruptedException {
-        long callTime = SysProperties.sysMillisTime();
-        while (true){
-            if (unit != null&&isTimeOut(callTime,unit.toMillis(timeout))){
-                //调用超时
-                break;
-            }
-            if (interruptable){
-                //中断状态检查
-                checkInterrupt();
-            }
-            LockEntity newEntity = LockEntity.newEntity(
-                    keyExpire + SysProperties.sysMillisTime());
-            if (RedisKits.strings()
-                    .setnx(lockKey,newEntity.toString()) == 1){
+    private boolean acquire(long begin, long timeout, TimeUnit unit, boolean interruptable) throws InterruptedException {
+        if (unit != null&&isTimeOut(begin,unit.toMillis(timeout))){
+            //调用超时
+            return true;
+        }
+        if (interruptable){
+            //中断状态检查
+            checkInterrupt();
+        }
+        LockEntity newEntity = LockEntity.newEntity(
+                keyExpire + SysProperties.sysMillisTime());
+        if (RedisKits.strings()
+                .setnx(lockKey,newEntity.toString()) == 1){
+            this.locked = true;
+            return true;
+        }
+        LockEntity regetEntity = JsonKits.toObject(
+                RedisKits.strings().get(lockKey),LockEntity.class);
+        if (regetEntity == null){
+            return true;
+        }
+        //旧实例持锁超时
+        if (isTimeOut(regetEntity.getExpireTime())){
+            LockEntity oldEntity = JsonKits.toObject(
+                    RedisKits.strings().getSet(lockKey,newEntity.toString())
+                    ,LockEntity.class);
+            if (oldEntity != null && isTimeOut(oldEntity.getExpireTime())){
                 this.locked = true;
                 return true;
             }
-            LockEntity regetEntity = JsonKits.toObject(
-                    RedisKits.strings().get(lockKey),LockEntity.class);
-            if (regetEntity == null){
-                continue;
-            }
-            //旧实例持锁超时
-            if (isTimeOut(regetEntity.getExpireTime())){
-                LockEntity oldEntity = JsonKits.toObject(
-                        RedisKits.strings().getSet(lockKey,newEntity.toString())
-                        ,LockEntity.class);
-                if (oldEntity != null && isTimeOut(oldEntity.getExpireTime())){
-                    this.locked = true;
-                    return true;
-                }
-                continue;
-            }
-            //未超时，判断可重入
-            if (regetEntity.isCurrentInstance()){
-                regetEntity.setExpireTime(keyExpire + SysProperties.sysMillisTime());
-                regetEntity.incrCount();
-                LockEntity oldEntity = JsonKits.toObject(
-                        RedisKits.strings().getSet(lockKey,regetEntity.toString())
-                        ,LockEntity.class);
-                //检查实例重入时是否被其他实例抢到锁
-                if (oldEntity != null &&oldEntity.equals(regetEntity)){
-                    this.locked = true;
-                    return true;
-                }
+            return false;
+        }
+        //未超时，判断可重入
+        if (regetEntity.isCurrentInstance()){
+            regetEntity.setExpireTime(keyExpire + SysProperties.sysMillisTime());
+            regetEntity.incrCount();
+            LockEntity oldEntity = JsonKits.toObject(
+                    RedisKits.strings().getSet(lockKey,regetEntity.toString())
+                    ,LockEntity.class);
+            //检查实例重入时是否被其他实例抢到锁
+            if (oldEntity != null &&oldEntity.equals(regetEntity)){
+                this.locked = true;
+                return true;
             }
         }
-        this.locked = false;
         return false;
     }
 

@@ -39,24 +39,14 @@ public class TestLock {
     }
 
     public static void main(String[] args) throws InterruptedException, ClassNotFoundException {
-        RLock lock = new RLock("suyun-app1");
+        RLock lock = new RLock("bizId-app1");
         Class.forName(LockHook.class.getName());
         new Thread(() -> {
             print(lock);
         },"thread-"+1).start();
         Thread.sleep(1000);
-        System.out.println("isLocked?:"+lock.isLocked());
-//        new Thread(() -> {
-//            tryPrint(lock);
-//        },"thread-"+2).start();
-
-//        System.out.println(new Date(1500114867850l));
-//        long s = SysProperties.sysMillisTime();
-//        RedisKits.strings().get("dislock-suyun-app1");
-//        LockEntity newEntity = LockEntity.newEntity(
-//                20000 + SysProperties.sysMillisTime());
-//        RedisKits.strings()
-//                .setnx("dislock-suyun-app1",newEntity.toString());
-//        System.out.println("耗时："+(SysProperties.sysMillisTime() - s));
+        new Thread(() -> {
+            tryPrint(lock);
+        },"thread-"+2).start();
     }
 }

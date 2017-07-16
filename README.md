@@ -71,9 +71,9 @@ public static void main(String[] args) throws Exception {
 	},"thread-"+2).start();
 }
 ```
-
 ###  Redis介质的分布式锁流程图：
-``` flow
+```flow
+
 st=>start: 获取锁
 e1=>end: 得到锁
 e2=>end: 得到锁
