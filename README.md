@@ -71,4 +71,18 @@ public static void main(String[] args) throws Exception {
 	},"thread-"+2).start();
 }
 ```
+### lock0部分的流程图：
+``` flow
 
+ st=>start:开始
+ e=>end:结束
+ op1=>operation:操作步骤
+ cond=>condition:是 或者 否?
+ op2=>operation:还有一步呢
+ op3=>operation:end 在哪儿？
+ st->op1-cond
+ cond(no)->op1
+ cond(yes)-op2
+ op2->op3->e->
+ 
+```
