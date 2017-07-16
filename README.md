@@ -72,18 +72,37 @@ public static void main(String[] args) throws Exception {
 }
 ```
 
-###  lock0部分的流程图：
+###  Redis介质的分布式锁流程图：
 ``` flow
+st=>start: 获取锁
+e1=>end: 得到锁
+e2=>end: 得到锁
+e3=>end: 得到锁
+e4=>end: 得到锁
+op=>operation: demo
+setnxOp=>operation: setnx
+getOp=>operation: get 
+getSetOp=>operation: getset
+reenOp=>operation: 重入
+countOp=>operation: 计数器加一
 
- st=>start:开始
- e=>end:结束
- op1=>operation:操作步骤
- cond=>condition:是 或者 否?
- op2=>operation:还有一步呢
- op3=>operation:end 在哪儿？
- st->op1-cond
- cond(no)->op1
- cond(yes)-op2
- op2->op3->e->
- 
+timeoutCond1=>condition: 锁是否超时
+timeoutCond2=>condition: is not null and 锁超时
+setnxCond=>condition: is 1
+nullCond=>condition: is null
+reenCond=>condition: 检查是否重入
+
+
+st->setnxOp->setnxCond
+setnxCond(yes)->e1
+setnxCond(no)->getOp->nullCond
+nullCond(yes)->timeoutCond1
+nullCond(no)->setnxOp
+timeoutCond1(yes)->getSetOp->timeoutCond2
+timeoutCond2(yes)->e3
+timeoutCond2(no)->setnxOp
+timeoutCond1(no)->reenCond
+reenCond(yes)->countOp->e4
+reenCond(no)->setnxOp
+
 ```
