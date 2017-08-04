@@ -1,7 +1,10 @@
 package org.easyarch.dislock.lock.entity;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.easyarch.dislock.kits.JsonKits;
 import org.easyarch.dislock.sys.SysProperties;
+
+import java.io.*;
 
 /**
  * 一个服务器作为一个实例，每个实例都可以获取锁
@@ -16,7 +19,7 @@ import org.easyarch.dislock.sys.SysProperties;
  * }
  * Created by xingtianyu(code4j) on 2017-7-15.
  */
-public class LockEntity {
+public class LockEntity implements Serializable{
 
     /**
      * 服务器物理地址
@@ -116,6 +119,24 @@ public class LockEntity {
     @Override
     public String toString() {
         return JsonKits.toString(this);
+    }
+
+    public String toJson(){
+        return JsonKits.toString(this);
+    }
+
+    public byte[] toBytes(){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            ObjectOutputStream oo = new ObjectOutputStream(bo);
+            oo.writeObject(this);
+            oo.flush();
+            baos.write(bo.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return baos.toByteArray();
     }
 
     @Override

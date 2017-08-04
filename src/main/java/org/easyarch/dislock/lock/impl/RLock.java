@@ -13,11 +13,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class RLock extends AbstractLock {
 
-    private static final long DEFAULT_KEY_EXPIRE = 20*1000;
-
-    private String lockKey;
-
-    private long keyExpire;
+    protected String lockKey;
 
     public RLock(String lockKey){
         this(lockKey,DEFAULT_KEY_EXPIRE);
@@ -31,7 +27,7 @@ public class RLock extends AbstractLock {
     @Override
     public boolean tryLock() {
         try {
-            return acquire(0,0,null,false);
+            return acquire(false);
         } catch (InterruptedException e) {
         }
         return false;
@@ -59,9 +55,13 @@ public class RLock extends AbstractLock {
     @Override
     protected boolean lock0(boolean isTimeOut, long timeout, TimeUnit unit, boolean interruptable) throws InterruptedException {
         long callTime = SysProperties.sysMillisTime();
-        while (!acquire(callTime,timeout,unit,interruptable)){
+        while (!acquire(interruptable)){
+            if (isTimeOut&&unit != null&&isTimeOut(callTime,unit.toMillis(timeout))){
+                //调用超时
+                this.locked = false;
+                return false;
+            }
         }
-        this.locked = true;
         return true;
     }
 
@@ -90,18 +90,12 @@ public class RLock extends AbstractLock {
      *          5.2.2 实例不是自己，则回到（1）尝试重新获取锁
      *
      *  redis写入耗时500ms,获取100ms
-     * @param begin
-     * @param timeout
-     * @param unit
      * @param interruptable
      * @return
      * @throws InterruptedException
      */
-    private boolean acquire(long begin, long timeout, TimeUnit unit, boolean interruptable) throws InterruptedException {
-        if (unit != null&&isTimeOut(begin,unit.toMillis(timeout))){
-            //调用超时
-            return true;
-        }
+    private boolean acquire( boolean interruptable) throws InterruptedException {
+
         if (interruptable){
             //中断状态检查
             checkInterrupt();

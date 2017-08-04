@@ -8,6 +8,10 @@ import java.util.concurrent.TimeUnit;
  */
 abstract public class AbstractLock implements Lock {
 
+    protected static final long DEFAULT_KEY_EXPIRE = 20*1000;
+
+    protected long keyExpire;
+
     protected volatile boolean locked;
 
     @Override

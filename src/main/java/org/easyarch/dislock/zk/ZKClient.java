@@ -3,8 +3,13 @@ package org.easyarch.dislock.zk;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.WatchedEvent;
+
+import java.util.List;
 
 /**
  * Created by xingtianyu(code4j) on 2017-7-15.
@@ -18,7 +23,7 @@ public class ZKClient {
     public static void main(String[] args) throws Exception {
         ZKClient client = new ZKClient();
 //        client.addListener(new WatchMinSeqListener("/"+BASE_PATH+"-"));
-        client.createPerNode("/"+BASE_PATH,"root".getBytes());
+//        client.createPerNode("/"+BASE_PATH,"root".getBytes());
         client.createEphSeqNode("/"+BASE_PATH+"/node-","hello".getBytes());
         client.createEphSeqNode("/"+BASE_PATH+"/node-","world".getBytes());
         client.createEphSeqNode("/"+BASE_PATH+"/node-","my".getBytes());
@@ -58,5 +63,44 @@ public class ZKClient {
         }
         return null;
     }
+
+    public boolean checkExist(String path)throws Exception{
+        return client.checkExists().forPath(path)!=null;
+    }
+
+    public List<String> getNodes(String basePath) throws Exception {
+        return client.getChildren().forPath(basePath);
+    }
+
+    public void setData(String nodePath,byte[] data) throws Exception {
+        client.setData().forPath(nodePath,data);
+    }
+
+    public void rmNode(String nodePath) throws Exception {
+        client.delete().forPath(nodePath);
+    }
+
+    public void watchNode(String parentNodePath,String watcherNodePath,String nodePath) throws Exception {
+        TreeCache cache = new TreeCache(client,nodePath);
+        cache.start();
+        cache.getListenable().addListener(new WatchMinSeqListener(parentNodePath,watcherNodePath));
+    }
+
+    public void watchChildNode(String path) throws Exception {
+        PathChildrenCache pathChildrenCache = new PathChildrenCache(client,path,true);
+        pathChildrenCache.getListenable().addListener(new PathChildrenCacheListener() {
+            @Override
+            public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+//                if (event.getType() == PathChildrenCacheEvent.Type.CHILD_REMOVED){
+//                    event.get
+//                }
+                System.out.println("childNode type:"+event.getType());
+                System.out.println("childNode data:"+event.getData());
+                System.out.println("childNodes :"+event.getInitialData());
+            }
+        });
+        pathChildrenCache.start();
+    }
+
 
 }

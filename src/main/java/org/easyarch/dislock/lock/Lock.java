@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface Lock {
 
-    String LOCK_KEY_NAME = "dislock-";
+    String LOCK_KEY_NAME = "lock-";
 
     /**
      * 阻塞性的获取锁, 不响应中断
@@ -28,7 +28,7 @@ public interface Lock {
 
     /**
      * 超时自动返回的阻塞性的获取锁, 不响应中断
-     *
+     * 超时时间是获取锁花费的时间，超过时间限制获取锁失败
      * @param time
      * @param unit
      * @return {@code true} 若成功获取到锁, {@code false} 若在指定时间内未获取到锁后返回结果，不会继续阻塞
@@ -38,7 +38,7 @@ public interface Lock {
 
     /**
      * 超时自动返回的阻塞性的获取锁, 响应中断
-     *
+     * 超时时间是获取锁花费的时间，超过时间限制获取锁失败
      * @param time
      * @param unit
      * @return {@code true} 若成功获取到锁, {@code false} 若在指定时间内未获取到锁响应中断
