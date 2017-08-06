@@ -100,18 +100,15 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
             String currentNode = ZKKits.createEphSeqNode(nodePath,entity.toBytes());
             List<String> nodes = ZKKits.getSortedNodes(basePath);
             Long currentNodeNum = Long.valueOf(currentNode.split("-")[1]);
-//            System.out.println(Thread.currentThread().getName()+" - currentNodeNum:"+currentNodeNum);
-//            System.out.println(Thread.currentThread().getName()+" - nodes:"+nodes);
             //找到相邻的比当前节点小的节点则监听它，否则自己就是最小节点，获取到锁
             for (String node:nodes){
                 Long num = Long.valueOf(node.split("-")[1]);
                 if (currentNodeNum - num == 1){
                     ZKKits.watchNode(basePath + "/" + node,new WatchMinSeqListener(
-                            this,basePath,basePath + "/" + node,SysProperties.uniqueId()));
+                            this,basePath,SysProperties.uniqueId()));
                     return false;
                 }
             }
-//            System.out.println(Thread.currentThread().getName()+" - 当前节点最小");
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -138,7 +135,6 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
     public void unlock() {
         try {
             String minNode = ZKKits.getMinNode(basePath);
-            System.out.println("delete path: "+basePath + "/" + minNode);
             ZKKits.rmNode(basePath + "/" + minNode);
             System.out.println(Thread.currentThread().getName()+" - 释放锁");
         } catch (Exception e) {
