@@ -53,12 +53,16 @@ public class SysProperties {
         }
     }
 
-    public static long getThreadId(){
+    public static long threadId(){
         return Thread.currentThread().getId();
     }
 
     public static long sysMillisTime(){
         return System.currentTimeMillis();
+    }
+
+    public static String uniqueId(){
+        return mac()+jvmPid()+threadId();
     }
 
     public static void main(String[] args) {

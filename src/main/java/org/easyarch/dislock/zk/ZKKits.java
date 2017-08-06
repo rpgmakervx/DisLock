@@ -1,6 +1,9 @@
 package org.easyarch.dislock.zk;
 
 import org.apache.curator.framework.api.CuratorListener;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.easyarch.dislock.lock.impl.ZLock;
 
 import java.util.List;
 
@@ -9,21 +12,25 @@ import java.util.List;
  */
 public class ZKKits {
 
-    private static ZKClient client = new ZKClient();
+    private static ZKClient client;
 
-    public static String createPerSeqNode(String path, byte[] data) {
+    public static void init(ZLock lock){
+         client = new ZKClient(lock);
+    }
+
+    public static String createPerSeqNode(String path, byte[] data) throws Exception {
         return client.createPerSeqNode(path, data);
     }
 
-    public static String createPerNode(String path, byte[] data) {
+    public static String createPerNode(String path, byte[] data) throws Exception {
         return client.createPerNode(path, data);
     }
 
-    public static String createEphNode(String path, byte[] data) {
+    public static String createEphNode(String path, byte[] data) throws Exception {
         return client.createEphNode(path, data);
     }
 
-    public static String createEphSeqNode(String path, byte[] data) {
+    public static String createEphSeqNode(String path, byte[] data) throws Exception {
         return client.createEphSeqNode(path, data);
     }
 
@@ -39,6 +46,10 @@ public class ZKKits {
         return client.getNodes(basePath);
     }
 
+    public static List<String> getSortedNodes(String basePath) throws Exception {
+        return client.getSortedNodes(basePath);
+    }
+
     public static void setData(String nodePath, byte[] data) throws Exception {
         client.setData(nodePath, data);
     }
@@ -47,11 +58,19 @@ public class ZKKits {
         client.rmNode(nodePath);
     }
 
-    public static void watchNode(String parentNodePath, String watcherNodePath, String nodePath) throws Exception {
-        client.watchNode(parentNodePath, watcherNodePath, nodePath);
+    public static void watchNode(String nodePath, TreeCacheListener listener) {
+        client.watchNode(nodePath, listener);
     }
 
     public static void watchChildNode(String path) throws Exception {
         client.watchChildNode(path);
+    }
+
+    public static String getMinNode(String basePath) throws Exception {
+        return client.getMinNode(basePath);
+    }
+
+    public static byte[] getData(String node) throws Exception {
+        return client.getData(node);
     }
 }

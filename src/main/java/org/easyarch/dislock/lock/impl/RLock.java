@@ -58,10 +58,10 @@ public class RLock extends AbstractLock {
         while (!acquire(interruptable)){
             if (isTimeOut&&unit != null&&isTimeOut(callTime,unit.toMillis(timeout))){
                 //调用超时
-                this.locked = false;
-                return false;
+                return true;
             }
         }
+        this.locked = true;
         return true;
     }
 

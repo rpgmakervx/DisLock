@@ -1,6 +1,5 @@
 package org.easyarch.dislock.lock.entity;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.easyarch.dislock.kits.JsonKits;
 import org.easyarch.dislock.sys.SysProperties;
 
@@ -49,7 +48,7 @@ public class LockEntity implements Serializable{
         entity.expireTime = expireTime;
         entity.mac = SysProperties.mac();
         entity.jvmPid = SysProperties.jvmPid();
-        entity.threadId = SysProperties.getThreadId();
+        entity.threadId = SysProperties.threadId();
         return entity;
     }
 
@@ -73,7 +72,7 @@ public class LockEntity implements Serializable{
     public boolean isCurrentInstance(){
         return SysProperties.mac().equals(mac)
                 && SysProperties.jvmPid() == jvmPid
-                && SysProperties.getThreadId() == threadId;
+                && SysProperties.threadId() == threadId;
     }
 
     public String getMac() {

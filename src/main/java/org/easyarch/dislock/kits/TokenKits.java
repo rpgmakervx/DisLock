@@ -14,7 +14,7 @@ public class TokenKits {
                     .append("|")
                     .append(SysProperties.jvmPid())
                     .append("|")
-                    .append(SysProperties.getThreadId());
+                    .append(SysProperties.threadId());
         } catch (Exception e) {
             e.printStackTrace();
         }

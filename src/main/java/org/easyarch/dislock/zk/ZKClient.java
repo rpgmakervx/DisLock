@@ -1,5 +1,7 @@
 package org.easyarch.dislock.zk;
 
+import com.sun.javafx.sg.prism.NodePath;
+import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorListener;
@@ -8,7 +10,9 @@ import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
+import org.easyarch.dislock.lock.impl.ZLock;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,33 +24,26 @@ public class ZKClient {
 
     private CuratorFramework client;
 
-    public static void main(String[] args) throws Exception {
-        ZKClient client = new ZKClient();
-//        client.addListener(new WatchMinSeqListener("/"+BASE_PATH+"-"));
-//        client.createPerNode("/"+BASE_PATH,"root".getBytes());
-        client.createEphSeqNode("/"+BASE_PATH+"/node-","hello".getBytes());
-        client.createEphSeqNode("/"+BASE_PATH+"/node-","world".getBytes());
-        client.createEphSeqNode("/"+BASE_PATH+"/node-","my".getBytes());
-        client.createEphSeqNode("/"+BASE_PATH+"/node-","world".getBytes());
-        Thread.sleep(100000);
-    }
+    private ZLock lock;
 
-    public ZKClient(){
+    public ZKClient(ZLock lock){
+        this.lock = lock;
         this.client = CuratorFrameworkFactory
                 .newClient("127.0.0.1:2181", new RetryNTimes(3,1000));
+        client.sync();
         client.start();
     }
 
-    public String createPerSeqNode(String path,byte[] data){
+    public String createPerSeqNode(String path,byte[] data) throws Exception {
         return createNode(path,data, CreateMode.PERSISTENT_SEQUENTIAL);
     }
-    public String createPerNode(String path,byte[] data){
+    public String createPerNode(String path,byte[] data) throws Exception {
         return createNode(path,data,CreateMode.PERSISTENT);
     }
-    public String createEphNode(String path,byte[] data){
+    public String createEphNode(String path,byte[] data) throws Exception {
         return createNode(path,data,CreateMode.EPHEMERAL);
     }
-    public String createEphSeqNode(String path,byte[] data){
+    public String createEphSeqNode(String path,byte[] data) throws Exception {
         return createNode(path,data,CreateMode.EPHEMERAL_SEQUENTIAL);
     }
 
@@ -54,14 +51,9 @@ public class ZKClient {
         client.getCuratorListenable().addListener(listener);
     }
 
-    private String createNode(String path,byte[] data,CreateMode mode){
-        try {
-            String name = client.create().withMode(mode).forPath(path,data);
-            return name;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    private String createNode(String path,byte[] data,CreateMode mode) throws Exception {
+        String name = client.create().withMode(mode).forPath(path,data);
+        return name;
     }
 
     public boolean checkExist(String path)throws Exception{
@@ -72,6 +64,46 @@ public class ZKClient {
         return client.getChildren().forPath(basePath);
     }
 
+    public List<String> getSortedNodes(String basePath) throws Exception {
+        List<String> nodes = getNodes(basePath);
+        sortNodes(nodes);
+        return nodes;
+    }
+
+    public String getMinNode(String basePath) throws Exception {
+        return getSortedNodes(basePath).get(0);
+    }
+
+    public byte[] getData(String node) throws Exception {
+        return client.getData().forPath(node);
+    }
+
+    /**
+     * 根据字符串后缀的数字进行冒泡排序,从小到大。
+     * @param nodes
+     */
+    private void sortNodes(List<String> nodes){
+        boolean flag = true;
+        for (int index = 0;index<nodes.size();index++){
+            for (int inner = 0;inner<nodes.size() -index - 1;inner++){
+                String front = nodes.get(inner);
+                String behind = nodes.get(inner + 1);
+                long frontNum = Long.valueOf(front.split("-")[1]);
+                long behindNum = Long.valueOf(behind.split("-")[1]);
+                String temp = "";
+                if (frontNum > behindNum){
+                    temp = behind;
+                    flag = false;
+                    nodes.set(inner + 1,front);
+                    nodes.set(inner,temp);
+                }
+            }
+            if (flag){
+                break;
+            }
+        }
+    }
+
     public void setData(String nodePath,byte[] data) throws Exception {
         client.setData().forPath(nodePath,data);
     }
@@ -80,10 +112,14 @@ public class ZKClient {
         client.delete().forPath(nodePath);
     }
 
-    public void watchNode(String parentNodePath,String watcherNodePath,String nodePath) throws Exception {
-        TreeCache cache = new TreeCache(client,nodePath);
-        cache.start();
-        cache.getListenable().addListener(new WatchMinSeqListener(parentNodePath,watcherNodePath));
+    public void watchNode(String nodePath,TreeCacheListener listener){
+        TreeCache cache = new TreeCache(client, nodePath);
+        try {
+            cache.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        cache.getListenable().addListener(listener);
     }
 
     public void watchChildNode(String path) throws Exception {
