@@ -2,7 +2,6 @@ package org.easyarch.dislock.zk.listener;
 
 import org.apache.commons.lang.StringUtils;
 import org.easyarch.dislock.lock.entity.LockEntity;
-import org.easyarch.dislock.lock.impl.ZKLock;
 import org.easyarch.dislock.lock.impl.ZLock;
 import org.easyarch.dislock.zk.ZKClient;
 import org.easyarch.dislock.zk.ZKKits;
@@ -22,14 +21,19 @@ public class LockNodeListener extends AbstractListener {
 
     @Override
     public void nodeChanged(ZKClient client,String nodePath, Object data, State state) {
-        if (State.NODE_DELETE != state){
+        System.out.println(State.NODE_DELETE.equals(state));
+        if (!State.NODE_DELETE.equals(state)){
+            System.out.println(state);
             return ;
         }
+        System.out.println("instanceId:"+instanceId+" - "+nodePath);
         LockEntity entity = LockEntity.newEntity(lock.getExpire(),instanceId);
+        System.out.println("instanceId"+instanceId+" - createPath:"+nodePath);
         String createPath = ZKKits.createPerNode(nodePath,entity);
         if (StringUtils.isNotBlank(createPath)){
             lock.getLatch(instanceId).countDown();
             ZKKits.removeListener(nodePath,this);
+            System.out.println("instanceId:"+instanceId+"- "+nodePath+" 节点删除");
             return ;
         }
     }

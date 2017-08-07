@@ -1,6 +1,5 @@
 package org.easyarch.dislock.zk.listener;
 
-import org.easyarch.dislock.lock.impl.ZKLock;
 import org.easyarch.dislock.zk.ZKClient;
 
 /**

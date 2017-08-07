@@ -3,7 +3,9 @@ package org.easyarch.dislock.zk.curator;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
-import org.easyarch.dislock.lock.impl.ZKLock;
+import org.easyarch.dislock.lock.impl.ZLock;
+
+import java.util.List;
 
 /**
  * Created by xingtianyu(code4j) on 2017-7-16.
@@ -12,13 +14,13 @@ public class WatchMinSeqListener implements TreeCacheListener {
 
     private String parentPath;
 
-    private ZKLock lock;
+    private ZLock lock;
     /**
      * 用来获取一个实例上的latch
      */
     private String instanceId;
 
-    public WatchMinSeqListener(org.easyarch.dislock.lock.impl.ZKLock lock, String parentPath, String instanceId){
+    public WatchMinSeqListener(ZLock lock, String parentPath, String instanceId){
         this.lock = lock;
         this.parentPath = parentPath;
         this.instanceId = instanceId;
@@ -32,11 +34,11 @@ public class WatchMinSeqListener implements TreeCacheListener {
 //        if (!TreeCacheEvent.Type.NODE_REMOVED.equals(event.getType())){
 //            return ;
 //        }
-//        List<String> nodes = ZKKits.getSortedNodes(parentPath);
-//        String []segs = nodes.get(0).split("-");
-//        Long minNum = Long.valueOf(nodes.get(0).split("-")[1]);
-//        if (minNum.equals(Long.valueOf(segs[1]))){
-//            lock.getLatch(instanceId).countDown();
-//        }
+        List<String> nodes = ZKKits.getSortedNodes(parentPath);
+        String []segs = nodes.get(0).split("-");
+        Long minNum = Long.valueOf(nodes.get(0).split("-")[1]);
+        if (minNum.equals(Long.valueOf(segs[1]))){
+            lock.getLatch(instanceId).countDown();
+        }
     }
 }

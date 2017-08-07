@@ -6,7 +6,8 @@ import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
-import org.easyarch.dislock.lock.impl.ZKLock;
+import org.apache.zookeeper.Watcher;
+import org.easyarch.dislock.lock.impl.ZLock;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,9 +23,9 @@ public class ZKClient {
 
     private ConcurrentHashMap<String,Boolean> watchedList = new ConcurrentHashMap<>();
 
-    private ZKLock lock;
+    private ZLock lock;
 
-    public ZKClient(ZKLock lock){
+    public ZKClient(ZLock lock){
         this.lock = lock;
         this.client = CuratorFrameworkFactory
                 .newClient("127.0.0.1:2181", new RetryNTimes(3,1000));
@@ -75,7 +76,11 @@ public class ZKClient {
     }
 
     public String getMinNode(String basePath) throws Exception {
-        return getSortedNodes(basePath).get(0);
+        List<String> nodes = getSortedNodes(basePath);
+        if (nodes == null||nodes.isEmpty()){
+            return null;
+        }
+        return nodes.get(0);
     }
 
     public byte[] getData(String node) throws Exception {
@@ -110,10 +115,15 @@ public class ZKClient {
 
     public void setData(String nodePath,byte[] data) throws Exception {
         client.setData().forPath(nodePath,data);
+
     }
 
     public void rmNode(String nodePath) throws Exception {
         client.delete().forPath(nodePath);
+    }
+
+    public void watchNode(String node,Watcher watcher) throws Exception {
+        client.getData().usingWatcher(watcher).forPath(node);
     }
 
     public void watchNode(String nodePath,TreeCacheListener listener){

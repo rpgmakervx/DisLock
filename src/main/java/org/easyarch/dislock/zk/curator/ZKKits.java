@@ -2,7 +2,8 @@ package org.easyarch.dislock.zk.curator;
 
 import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
-import org.easyarch.dislock.lock.impl.ZKLock;
+import org.apache.zookeeper.Watcher;
+import org.easyarch.dislock.lock.impl.ZLock;
 
 import java.util.List;
 
@@ -13,7 +14,7 @@ public class ZKKits {
 
     private static ZKClient client;
 
-    public static void init(ZKLock lock){
+    public static void init(ZLock lock){
          client = new ZKClient(lock);
     }
 
@@ -71,5 +72,9 @@ public class ZKKits {
 
     public static byte[] getData(String node) throws Exception {
         return client.getData(node);
+    }
+
+    public static void watchNode(String node, Watcher watcher) throws Exception {
+        client.watchNode(node, watcher);
     }
 }
