@@ -1,9 +1,8 @@
-package org.easyarch.dislock.zk;
+package org.easyarch.dislock.zk.curator;
 
 import org.apache.curator.framework.api.CuratorListener;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
-import org.easyarch.dislock.lock.impl.ZLock;
+import org.easyarch.dislock.lock.impl.ZKLock;
 
 import java.util.List;
 
@@ -14,7 +13,7 @@ public class ZKKits {
 
     private static ZKClient client;
 
-    public static void init(ZLock lock){
+    public static void init(ZKLock lock){
          client = new ZKClient(lock);
     }
 
