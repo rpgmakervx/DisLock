@@ -3,6 +3,7 @@ package org.easyarch.dislock.lock;
 import org.easyarch.dislock.LockHook;
 import org.easyarch.dislock.lock.impl.RLock;
 import org.easyarch.dislock.lock.impl.ZLock;
+import org.easyarch.dislock.sys.SysProperties;
 
 import java.util.concurrent.TimeUnit;
 
@@ -15,11 +16,18 @@ public class TestLock {
         try{
             lock.lock();
             System.out.println(Thread.currentThread().getName()+" - 获取到锁");
+            lock.lock();
+            System.out.println(Thread.currentThread().getName()+" - 获取到重入锁");
             Thread.sleep(2000);
+//            lock.lock();
+//            System.out.println(Thread.currentThread().getName()+" - 重入锁");
+//            Thread.sleep(2000);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             lock.unlock();
+//            lock.unlock();
+//            lock.unlock();
         }
     }
 
@@ -47,6 +55,7 @@ public class TestLock {
             new Thread(() -> {
                 print(lock);
             },"thread-"+index).start();
+//            Thread.sleep(500);
         }
     }
 }

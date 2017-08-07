@@ -35,15 +35,19 @@ public class ZKClient {
     }
 
     public String createPerSeqNode(String path,byte[] data) throws Exception {
+        client.sync().forPath(path);
         return createNode(path,data, CreateMode.PERSISTENT_SEQUENTIAL);
     }
     public String createPerNode(String path,byte[] data) throws Exception {
+        client.sync().forPath(path);
         return createNode(path,data,CreateMode.PERSISTENT);
     }
     public String createEphNode(String path,byte[] data) throws Exception {
+        client.sync().forPath(path);
         return createNode(path,data,CreateMode.EPHEMERAL);
     }
     public String createEphSeqNode(String path,byte[] data) throws Exception {
+        client.sync().forPath(path);
         return createNode(path,data,CreateMode.EPHEMERAL_SEQUENTIAL);
     }
 
@@ -52,6 +56,7 @@ public class ZKClient {
     }
 
     private String createNode(String path,byte[] data,CreateMode mode) throws Exception {
+        client.sync().forPath(path);
         String name = client.create().withMode(mode).forPath(path,data);
         return name;
     }
@@ -61,6 +66,7 @@ public class ZKClient {
     }
 
     public List<String> getNodes(String basePath) throws Exception {
+        client.sync().forPath(basePath);
         return client.getChildren().forPath(basePath);
     }
 

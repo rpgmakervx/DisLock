@@ -1,17 +1,9 @@
 package org.easyarch.dislock.lock.impl;
 
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
-import org.apache.curator.framework.recipes.cache.TreeCacheListener;
-import org.apache.zookeeper.KeeperException;
 import org.easyarch.dislock.lock.AbstractLock;
 import org.easyarch.dislock.lock.entity.LockEntity;
 import org.easyarch.dislock.sys.SysProperties;
 import org.easyarch.dislock.zk.WatchMinSeqListener;
-import org.easyarch.dislock.zk.ZKClient;
 import org.easyarch.dislock.zk.ZKKits;
 
 import java.util.List;
@@ -22,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by xingtianyu(code4j) on 2017-8-3.
  */
-public class ZLock extends AbstractLock implements TreeCacheListener {
+public class ZLock extends AbstractLock{
 
     private static final ConcurrentHashMap<String,CountDownLatch> latches = new ConcurrentHashMap<>();
 
@@ -34,6 +26,8 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
     //格式为：/dislock/{业务线}/{应用名}
     private volatile String basePath;
 
+    private volatile boolean start = true;
+
     public ZLock(String basePath){
         this(basePath,DEFAULT_KEY_EXPIRE);
     }
@@ -43,6 +37,22 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
         this.nodePath = basePath + "/"+LOCK_KEY_NAME;
         this.keyExpire = keyExpire;
         ZKKits.init(this);
+        init();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//            }
+//        }).start();
+    }
+
+    private void init(){
+        LockEntity entity = LockEntity.newEntity(keyExpire + SysProperties.sysMillisTime());
+        try {
+            ZKKits.createEphSeqNode(nodePath,entity.toBytes());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     public CountDownLatch getLatch(String instanceId){
@@ -97,27 +107,54 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
         }
         LockEntity entity = LockEntity.newEntity(keyExpire + SysProperties.sysMillisTime());
         try {
-            String currentNode = ZKKits.createEphSeqNode(nodePath,entity.toBytes());
             List<String> nodes = ZKKits.getSortedNodes(basePath);
+            //判断可重入
+            if (nodes!= null&&!nodes.isEmpty()){
+                String minNode = nodes.get(0);
+                LockEntity zkEntity = LockEntity.getEntity(ZKKits.getData(basePath + "/" + minNode));
+                //确认最小节点就是当前实例
+                if (zkEntity.isCurrentInstance()){
+                    System.out.println("满足重入条件");
+                    zkEntity.incrCount();
+                    ZKKits.setData(basePath + "/" + minNode,zkEntity.toBytes());
+                    this.locked = true;
+                    return true;
+                }
+            }
+            String currentNode = ZKKits.createEphSeqNode(nodePath,entity.toBytes());
             Long currentNodeNum = Long.valueOf(currentNode.split("-")[1]);
+            if (start){
+                start = false;
+                String defaultNode = nodes.get(0);
+                ZKKits.rmNode(basePath + "/" + defaultNode);
+            }
+            nodes = ZKKits.getSortedNodes(basePath);
             //找到相邻的比当前节点小的节点则监听它，否则自己就是最小节点，获取到锁
             for (String node:nodes){
                 Long num = Long.valueOf(node.split("-")[1]);
+//                System.out.println(SysProperties.uniqueId()+" num:"+num+"  currentNum:"+currentNode);
                 if (currentNodeNum - num == 1){
+//                    System.out.println(SysProperties.uniqueId()+" 有更大的节点，currentNum:"+currentNode);
                     ZKKits.watchNode(basePath + "/" + node,new WatchMinSeqListener(
                             this,basePath,SysProperties.uniqueId()));
+                    this.locked = false;
                     return false;
                 }
             }
-            return true;
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
+            this.locked = false;
+            return false;
         }
-        return false;
+        this.locked = true;
+        return true;
     }
 
     @Override
     public boolean isLocked() {
+        if (!locked){
+            return false;
+        }
         return false;
     }
 
@@ -135,8 +172,22 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
     public void unlock() {
         try {
             String minNode = ZKKits.getMinNode(basePath);
-            ZKKits.rmNode(basePath + "/" + minNode);
-            System.out.println(Thread.currentThread().getName()+" - 释放锁");
+            String nodePath = basePath + "/" + minNode;
+            LockEntity entity = LockEntity.getEntity(ZKKits.getData(nodePath));
+            if (entity != null){
+                if (entity.isCurrentInstance()){
+                    if (entity.getCount() == 1){
+                        ZKKits.rmNode(nodePath);
+                        System.out.println(Thread.currentThread().getName()+" - 释放锁");
+                        this.locked = false;
+                    }else{
+                        entity.decrCount();
+                        ZKKits.setData(nodePath,entity.toBytes());
+                    }
+                    return;
+                }
+            }
+            throw new IllegalMonitorStateException();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -172,16 +223,5 @@ public class ZLock extends AbstractLock implements TreeCacheListener {
         ZKKits.rmNode("/dislock/suyun/app1/lock-0000000004");
 
 //        ZKKits.createPerNode("/dislock/suyun/app1/"+LOCK_KEY_NAME,"".getBytes());
-    }
-
-    @Override
-    public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
-        if (!TreeCacheEvent.Type.NODE_REMOVED.equals(event.getType())){
-            return ;
-        }
-        List<String> nodes = ZKKits.getSortedNodes(basePath);
-        if(this.latch != null) {
-            this.latch.countDown();
-        }
     }
 }

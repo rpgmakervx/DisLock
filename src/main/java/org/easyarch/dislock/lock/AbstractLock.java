@@ -18,7 +18,7 @@ abstract public class AbstractLock implements Lock {
     public void lock() {
         try {
             lock0(false,0,null,false);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
         }
     }
 
@@ -26,7 +26,7 @@ abstract public class AbstractLock implements Lock {
     public boolean tryLock(long time, TimeUnit unit) {
         try {
             return lock0(true,time,unit,false);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
         }
         return false;
     }

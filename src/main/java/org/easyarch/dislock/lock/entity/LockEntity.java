@@ -52,6 +52,17 @@ public class LockEntity implements Serializable{
         return entity;
     }
 
+    public static LockEntity getEntity(byte[] bytes){
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        try {
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            return (LockEntity) ois.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public LockEntity incrCount() {
         if (count == Integer.MAX_VALUE) {
             throw new Error("lock count too much");
