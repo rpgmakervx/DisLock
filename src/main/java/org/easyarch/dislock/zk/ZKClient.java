@@ -2,7 +2,9 @@ package org.easyarch.dislock.zk;
 
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.ZkLock;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.easyarch.dislock.kits.PropertyKits;
 import org.easyarch.dislock.zk.listener.NodeListener;
@@ -35,7 +37,11 @@ public class ZKClient {
     }
 
     public String createPerNode(String nodePath,Object data){
-        return zkClient.create(nodePath,data,CreateMode.PERSISTENT);
+        try {
+            return zkClient.create(nodePath,data,CreateMode.PERSISTENT);
+        }catch (Exception e){
+            return null;
+        }
     }
 
     public String createPerSeqNode(String nodePath,Object data){
@@ -43,7 +49,7 @@ public class ZKClient {
     }
 
     public<T> T getData(String nodePath){
-        return zkClient.readData(nodePath);
+        return zkClient.readData(nodePath,true);
     }
 
     public void setData(String nodePath,Object data){
@@ -64,6 +70,10 @@ public class ZKClient {
 
     public void addListener(String nodePath, NodeListener listener){
         zkClient.subscribeDataChanges(nodePath,new ZKDataListener(this,listener));
+    }
+
+    public void removeListener(String nodePath, NodeListener listener){
+        zkClient.unsubscribeDataChanges(nodePath,listener.getListener());
     }
 
 }

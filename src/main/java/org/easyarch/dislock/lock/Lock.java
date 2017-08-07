@@ -9,6 +9,8 @@ public interface Lock {
 
     String LOCK_KEY_NAME = "lock-";
 
+    String PER_LOCK_KEY_NAME = "~lock";
+
     /**
      * 阻塞性的获取锁, 不响应中断
      */

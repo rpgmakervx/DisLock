@@ -62,7 +62,7 @@ public class SysProperties {
     }
 
     public static String uniqueId(){
-        return mac()+jvmPid()+threadId();
+        return mac()+"|"+jvmPid()+"|"+threadId();
     }
 
     public static void main(String[] args) {

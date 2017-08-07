@@ -15,6 +15,7 @@ public class ZKDataListener implements IZkDataListener {
     public ZKDataListener(ZKClient client,NodeListener listener){
         this.client = client;
         this.listener = listener;
+        listener.setListener(this);
     }
 
     @Override

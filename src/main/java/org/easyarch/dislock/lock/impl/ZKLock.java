@@ -54,6 +54,10 @@ public class ZKLock extends AbstractLock{
 
     }
 
+    public long getExpire(){
+        return keyExpire;
+    }
+
     public CountDownLatch getLatch(String instanceId){
         return latches.get(instanceId);
     }

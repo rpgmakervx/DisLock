@@ -1,5 +1,6 @@
 package org.easyarch.dislock.zk.listener;
 
+import org.easyarch.dislock.lock.impl.ZKLock;
 import org.easyarch.dislock.zk.ZKClient;
 
 /**
@@ -7,6 +8,9 @@ import org.easyarch.dislock.zk.ZKClient;
  */
 public interface NodeListener{
 
-    public void nodeChanged(ZKClient client,String nodePath,Object data,State state);
+    public void nodeChanged(ZKClient client,String nodePath, Object data, State state);
 
+    public ZKDataListener getListener();
+
+    public void setListener(ZKDataListener listener);
 }

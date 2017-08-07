@@ -3,6 +3,7 @@ package org.easyarch.dislock.lock.entity;
 import org.easyarch.dislock.kits.JsonKits;
 import org.easyarch.dislock.sys.SysProperties;
 
+import javax.swing.text.html.parser.Entity;
 import java.io.*;
 
 /**
@@ -51,6 +52,19 @@ public class LockEntity implements Serializable{
         entity.threadId = SysProperties.threadId();
         return entity;
     }
+
+    public static LockEntity newEntity(long expireTime,String uniqueId){
+        LockEntity entity = new LockEntity();
+        entity.count = 1;
+        entity.expireTime = expireTime;
+        String[] segs = uniqueId.split("|");
+        entity.mac = segs[0];
+        entity.jvmPid = Long.valueOf(segs[1]);
+        entity.threadId = Long.valueOf(segs[2]);
+        return entity;
+
+    }
+
 
     public static LockEntity getEntity(byte[] bytes){
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
